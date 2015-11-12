@@ -1,0 +1,349 @@
+cycube_lootdrop:
+    type: world
+    version: 1.24
+    developer: cyborax
+    debug: false
+    events:
+         on player picks up cycube_money:
+           #- ^determine cancelled
+           - narrate "<gold>+<context.item.quantity> Milchschnitten"
+           - give money quantity:<context.item.quantity>
+           - wait 1t
+           - take i@cycube_money quantity:64
+         on ZOMBIE spawns:
+           - define mobname Zombie
+           - define mobtype Zombie
+           - ^inject s@cycube_define_sd
+           - ^inject s@cycube_spawnmoby_1
+           - ^inject s@cycube_randomboss_task
+           - ^inject s@cycube_extendetmob_task
+         on SKELETON spawns:
+           #- narrate <context.entity.name>
+           - define mobname Skelett
+           - define mobtype Skeleton
+           - ^inject s@cycube_define_sd
+           - ^inject s@cycube_spawnmoby_1
+         on CREEPER spawns:
+           #- narrate <context.entity.name>
+           - define mobname Creeper
+           - define mobtype Creeper
+           - ^inject s@cycube_define_sd
+           - ^inject s@cycube_spawnmoby_2
+         on SPIDER spawns:
+           #- narrate <context.entity.name>
+           - define mobname Spinne
+           - define mobtype Spider
+           - ^inject s@cycube_define_sd
+           - ^inject s@cycube_spawnmoby_2
+         on ZOMBIE killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"
+           - inject s@cycube_lootdrop_func
+         on SKELETON killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on SPIDER killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on CREEPER killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on PIG_ZOMBIE killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on CAVE_SPIDER killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on BLAZE killed by player:
+           #- narrate "<player.name> killed <context.entity.name>"         
+           - inject s@cycube_lootdrop_func
+         on entity killed by player:
+           - narrate "<player.name> killed <context.entity.name>"
+
+cycube_lootdrop_func:
+    type: task
+    debug: true
+    world_spawn_x: -375
+    world_spawn_y: 0
+    script:
+      - ^inject s@cycube_define_ld
+      - define moneyvalue <m:(1+(<def[ld].as_int>))>
+      #- drop i@cycube_money <cu@<context.entity.location.add[-2,-2,-2]>|<context.entity.location.add[2,2,2]>.get_spawnable_blocks.random>
+      #- drop i@cycube_money <cu@<c.location.add[-2,-2,-2]>|<c.location.add[2,2,2]>.get_spawnable_blocks.random> quantity:%moneyvalue%
+      - drop i@cycube_money quantity:<def[moneyvalue].as_int> <context.entity.location>
+      - drop xp quantity:<def[moneyvalue].as_int> <context.entity.location>
+      #- narrate "ld_debug: <context.entity.name>"
+      #- narrate "ld_debug: <context.entity.name.contains_any_text[BOSS]>"
+      - inject s@cycube_small_loottable_func
+      - if <context.entity.name.contains_any_text[BOSS]> {
+        - inject s@cycube_loottable_func
+      }
+      #- narrate "<gold><def[moneyvalue].as_int> Zenys gedroppt"
+cycube_small_loottable_func:
+    type: task
+    debug: true
+    loot_table_types_norm: "food|stuff"
+    loot_table_stuff: "i@cobblestone|i@oak_planks|i@LEATHER|i@IRON_INGOT|i@GOLD_INGOT|i@LAPIS_LAZULI|i@DIAMOND"
+    loot_table_food: "i@APPLE|i@BAKED_POTATO|i@BREAD|i@CARROT_ITEM|i@COOKED_BEEF|i@COOKED_CHICKEN|i@COOKED_FISH|i@COOKED_MUTTON|i@COOKED_RABBIT|i@COOKIE|i@GRILLED_PORK"
+    script:
+        - define rndnumber <util.random.int[1].to[1000]>
+        - if <def[rndnumber]> < 330 {
+            - ^define loot_type_nr <util.random.int[1].to[2]>
+            - ^define loot_item_type <script.yaml_key[loot_table_types_norm].as_list.get[%loot_type_nr%]>
+            - ^define loot_list_size <script.yaml_key[loot_table_%loot_item_type%].as_list.size>
+            - ^define rnd_item_nr <util.random.int[1].to[%loot_list_size%]>
+            - ^define dropitem <script.yaml_key[loot_table_%loot_item_type%].as_list.get[%rnd_item_nr%]>
+            - ^drop <def[dropitem]> quantity:<m:(1+(<def[ld].as_int>))> <context.entity.location>
+            - ^random 3
+            - ^playsound sound:VILLAGER_YES <context.entity.location>
+            - ^playsound sound:CHEST_CLOSE <context.entity.location>
+            - ^playsound sound:SKELETON_DEATH <context.entity.location>
+            - ^narrate "<green><context.entity.name> hat ein paar Dinge verloren..."
+        } else {
+          - ^playsound sound:ITEM_BREAK <context.entity.location>
+          - ^random 3
+          - ^narrate "<red>Loot wurde zerstört"
+          - ^narrate "<red>Boing..Beute ist weg"
+          - ^narrate "<red>Die Beute wurde zerstört"
+        }
+    
+cycube_loottable_func:
+    type: task
+    debug: true
+    loot_table_types: "food|stuff|mythicdrops|chests"
+    loot_table_chests: "pack_box|small_box|magic_box|silver_box|exotic_box|legendary_box"
+    loot_table_food: "i@APPLE|i@BAKED_POTATO|i@BREAD|i@CARROT_ITEM|i@COOKED_BEEF|i@COOKED_CHICKEN|i@COOKED_FISH|i@COOKED_MUTTON|i@COOKED_RABBIT|i@COOKIE|i@GRILLED_PORK"
+    loot_table_stuff: "i@cobblestone|i@oak_planks|i@LEATHER|i@IRON_INGOT|i@GOLD_INGOT|i@LAPIS_LAZULI|i@DIAMOND"
+    loot_table_mythicdrops: "uncommon|common|artisan|rare|extended"
+    loot_table_md_extended: "epic_a|epic_w|exotic_w|exotic_a|legendary_w|legendary_a"
+    script:
+      - if <context.entity.name.contains_any_text[BOSS]> {
+        - define rndnumber <util.random.int[1].to[1000]>
+        - if <def[rndnumber]> < 500 {
+          #- ^inject s@cycube_define_ld # ld sollte bereits injected sein
+          - ^define loot_qty <m:1+(<def[ld].as_int>/10)>
+          - narrate "loot_qty: <def[loot_qty].as_int>"
+          - repeat <def[loot_qty].as_int> {
+            - ^define loot_type_nr <util.random.int[1].to[4]>
+            - ^define loot_item_type <script.yaml_key[loot_table_types].as_list.get[%loot_type_nr%]>
+            - ^define loot_list_size <script.yaml_key[loot_table_%loot_item_type%].as_list.size>
+            - ^define rnd_item_nr <util.random.int[1].to[%loot_list_size%]>
+            - ^define dropitem <script.yaml_key[loot_table_%loot_item_type%].as_list.get[%rnd_item_nr%]>
+            #- ^define dropitem2 <script.yaml_key[loot_table_<script.yaml_key[loot_table_types].as_list.get[<util.random.int[1].to[4]>]>].as_list.get[<util.random.int[1].to[<script.yaml_key[loot_table_<script.yaml_key[loot_table_types].as_list.get[<util.random.int[1].to[4]>]>].as_list.size>]>]>
+            - ^if <def[loot_item_type]> == mythicdrops {
+              - ^if <def[dropitem]> == extended {
+                - ^define loot_mdlist_size <script.yaml_key[loot_table_md_extended].as_list.size>  
+                - ^define rnd_mditem_nr <util.random.int[1].to[%loot_mdlist_size%]>                
+                - ^define dropitem <script.yaml_key[loot_table_md_extended].as_list.get[%rnd_mditem_nr%]>
+                - ^execute as_server "md drop <context.entity.location> -a 1 -t %dropitem%"
+              } else {
+                - ^execute as_server "md drop <context.entity.location> -a 1 -t %dropitem%"
+              }
+            } else {
+              - ^drop <def[dropitem]> quantity:1 <context.entity.location>
+            }
+            - ^narrate "dropped: <def[dropitem]>"
+          }
+        } else {
+          - ^playsound sound:ITEM_BREAK <context.entity.location>
+          - ^narrate "<red>Loot wurde zerstört"
+        }
+      }
+cycube_money:
+    type: item
+    debug: false    
+    material: GOLD_NUGGET
+    display name: <gold>Milchschnitten
+
+cycube_rndnumber:
+    type: task
+    debug: false
+    script:
+      - define rndnumber <util.random.int[1].to[1000]>
+
+custom_spawnboss:
+  type: command
+  debug: false
+  name: spawnboss
+  script:
+    - if <player.name> == "cyborax" {
+      - run cycube_spawnboss_task
+    }
+cycube_spawnboss_task:
+    type: task
+    debug: false
+    script:
+      - ^inject s@cycube_define_sd    
+      #- define dbmob <util.random.int[1].to[300]>
+      - ^define dbtype <util.random.int[1].to[6]>
+      - ^define dbmoblistname Zombie|Spinne|Creeper|Höhlenspinne|Zombieschwein|Lohe
+      - ^define dbmoblisttype Zombie|Spider|Creeper|CaveSpider|PigZombie|Blaze
+      - ^define mobname "BOSS <def[dbmoblistname].as_list.get[%dbtype%]>"
+      - ^define mobtype <def[dbmoblisttype].as_list.get[%dbtype%]>
+      - ^inject s@cycube_define_sd
+      #- define sd <def[dbmob]>
+      - ^inject s@cycube_spawnboss
+
+cycube_randomboss_task:
+    type: task
+    debug: false
+    script:
+      - if <util.random.int[1].to[1000]> < 10 {
+        - define dbmob <util.random.int[1].to[300]>
+        - define dbtype <util.random.int[1].to[6]>
+        - define dbmoblistname Zombie|Spinne|Creeper|Höhlenspinne|Zombieschwein|Lohe
+        - define dbmoblisttype Zombie|Spider|Creeper|CaveSpider|PigZombie|Blaze
+        - define mobname "BOSS <def[dbmoblistname].as_list.get[%dbtype%]>"
+        - define mobtype <def[dbmoblisttype].as_list.get[%dbtype%]>
+        #- define sd <def[dbmob]>
+        - ^inject s@cycube_define_sd
+        - EXECUTE AS_SERVER "say <yellow>%mobname% wurde gesichtet! (<context.location.x> <context.location.y> <context.location.z>)"
+        - inject s@cycube_spawnboss        
+      }
+      
+cycube_extendetmob_task:
+    type: task
+    debug: false
+    script:
+      - if <util.random.int[1].to[1000]> < 10 {
+        - define dbmob <util.random.int[1].to[300]>
+        - define dbtype <util.random.int[1].to[6]>
+        - define dbmoblistname Höhlenspinne|Zombieschwein|Lohe|Wither|Endermade
+        - define dbmoblisttype CaveSpider|PigZombie|Blaze|Wither|Endermite
+        - define mobname "RARE <def[dbmoblistname].as_list.get[%dbtype%]>"
+        - define mobtype <def[dbmoblisttype].as_list.get[%dbtype%]>
+        #- define sd <def[dbmob]>
+        - ^inject s@cycube_define_sd
+        - EXECUTE AS_SERVER "say <yellow>%mobname% wurde gesichtet! (<context.location.x> <context.location.y> <context.location.z>)"
+        - inject s@cycube_spawnboss        
+      }
+cycube_define_ld:
+    type: task
+    debug: false
+    world_spawn_x: -375
+    world_spawn_z: 0
+    script:
+      - ^define lx <m:(<script.yaml_key[world_spawn_x]>-<context.entity.location.x>)>
+      - ^define lz <m:(<script.yaml_key[world_spawn_z]>-<context.entity.location.z>)> 
+      - if %lx% < 0 define lx <m:(%lx%*-1)>
+      - if %lz% < 0 define ly <m:(%lz%*-1)>
+      - ^define ldx <m:(%lx%*%lx%)+(%lz%*%lz%)>
+      - ^define ld <m:(<def[ldx].as_int.sqrt>/100)*0.1>
+    
+cycube_define_sd:
+    type: task
+    debug: false
+    world_spawn_x: -375
+    world_spawn_z: 0
+    script:
+      - ^define sx <m:(<script.yaml_key[world_spawn_x]>-<c.location.x>)>
+      - ^define sz <m:(<script.yaml_key[world_spawn_z]>-<c.location.z>)>
+      - if %sx% < 0 define sx <m:(%sx%*-1)>
+      - if %sz% < 0 define sz <m:(%sz%*-1)>
+      # Der Herr Pythagoras bestimmt die Distanz.
+      - ^define ssd <m:(%sx%*%sx%)+(%sz%*%sz%)>
+      - ^define sd <m:(<def[ssd].as_int.sqrt>/100)>
+
+cycube_spawnboss:
+    type: task
+    debug: false
+    colorlist: "li@<white>|<white>|<gray>|<gray>|<gold>|<aqua>"
+    helmlist: "li@{id:0}|{id:298}|{id:302}|{id:306}|{id:314}|{id:310}"
+    chestlist: "li@{id:0}|{id:299}|{id:303}|{id:307}|{id:315}|{id:311}"
+    legglist: "li@{id:0}|{id:300}|{id:304}|{id:308}|{id:316}|{id:312}"
+    bootlist: "li@{id:301}|{id:301}|{id:305}|{id:309}|{id:317}|{id:313}"
+    swordlist: "li@{id:0}|{id:268}|{id:272}|{id:267}|{id:283}|{id:276}"
+    bowlist: "li@{id:261}" 
+    script:
+        - EXECUTE AS_SERVER "summon <def[dbmob]> <context.location.x> <context.location.y> <context.location.z>"
+        - define mobhealth <m:30+(<def[sd].as_int>*1.5)>
+        - define mobdmg <m:2+(<def[sd].as_int>*0.3)>
+        - define equipmath <m:1+((<def[sd].as_int>*0.1)/2)>
+        - if <def[equipmath].as_int> > 6 {
+          - define equiplevel 6
+        } else {
+          - define equiplevel <def[equipmath].as_int>           
+        }
+        - define mobname "<red>(lvl <def[mobhealth].as_int>) <def[mobname]>"
+        - define mobequip "<script.yaml_key[swordlist].as_list.get[%equiplevel%]>,<script.yaml_key[bootlist].as_list.get[%equiplevel%]>,<script.yaml_key[legglist].as_list.get[%equiplevel%]>,<script.yaml_key[chestlist].as_list.get[%equiplevel%]>,<script.yaml_key[helmlist].as_list.get[%equiplevel%]>"
+        - if <context.entity.name> = SKELETON define mobequip "{id:261},<script.yaml_key[bootlist].as_list.get[%equiplevel%]>,<script.yaml_key[legglist].as_list.get[%equiplevel%]>,<script.yaml_key[chestlist].as_list.get[%equiplevel%]>,<script.yaml_key[helmlist].as_list.get[%equiplevel%]>"
+        - EXECUTE AS_SERVER "
+          summon <def[mobtype]> <context.location.x> <context.location.y.as_int.add[1]> <context.location.z> 
+          {Equipment:[%mobequip%],
+          CustomName:%mobname%,
+          CustomNameVisible:1,
+          Attributes:[
+           {Name:generic.movementSpeed,Base:0.3},
+           {Name:generic.knockbackResistance,Base:1},
+           {Name:generic.maxHealth,Base:%mobhealth%},
+           {Name:generic.attackDamage,Base:%mobdmg%}
+           ]
+          }"
+        - announce to_console '%mobname% dmg:%mobdmg%'
+
+cycube_spawnmoby_1:
+    type: task
+    debug: false
+    colorlist: "li@<white>|<white>|<gray>|<gray>|<gold>|<aqua>"
+    helmlist: "li@{id:0}|{id:298}|{id:302}|{id:306}|{id:314}|{id:310}"
+    chestlist: "li@{id:0}|{id:299}|{id:303}|{id:307}|{id:315}|{id:311}"
+    legglist: "li@{id:0}|{id:300}|{id:304}|{id:308}|{id:316}|{id:312}"
+    bootlist: "li@{id:301}|{id:301}|{id:305}|{id:309}|{id:317}|{id:313}"
+    swordlist: "li@{id:0}|{id:268}|{id:272}|{id:267}|{id:283}|{id:276}"
+    bowlist: "li@{id:261}"
+    script:
+         #- ^if !<def[mobname]> define mobname Zombie
+         #- ^if !<def[mobtype]> define mobtype Zombie
+         - if <context.entity.name> = <def[mobtype]> {
+           - ^remove <context.entity>
+           - define mobhealth <m:10+<def[sd].as_int>>
+           - define mobdmg <m:2+(<def[sd].as_int>*0.1)>
+           - define equipmath <m:1+((<def[sd].as_int>*0.1)/2)>
+           - if <def[equipmath].as_int> > 6 {
+             - define equiplevel 6
+           } else {
+             - define equiplevel <def[equipmath].as_int>           
+           }
+           #- define mobcolor <script.yaml_key[colorlist].as_list.get[%equiplevel%]>
+           - define mobname "(lvl <def[mobhealth].as_int>) <def[mobname]>"
+           #- define mobequip "<script.yaml_key[swordlist].as_list.get[%equiplevel%]>,<script.yaml_key[helmlist].as_list.get[%equiplevel%]>,<script.yaml_key[chestlist].as_list.get[%equiplevel%]>,<script.yaml_key[legglist].as_list.get[%equiplevel%]>,<script.yaml_key[bootlist].as_list.get[%equiplevel%]>"
+           - define mobequip "<script.yaml_key[swordlist].as_list.get[%equiplevel%]>,<script.yaml_key[bootlist].as_list.get[%equiplevel%]>,<script.yaml_key[legglist].as_list.get[%equiplevel%]>,<script.yaml_key[chestlist].as_list.get[%equiplevel%]>,<script.yaml_key[helmlist].as_list.get[%equiplevel%]>"
+           - if <context.entity.name> = SKELETON define mobequip "{id:261},<script.yaml_key[bootlist].as_list.get[%equiplevel%]>,<script.yaml_key[legglist].as_list.get[%equiplevel%]>,<script.yaml_key[chestlist].as_list.get[%equiplevel%]>,<script.yaml_key[helmlist].as_list.get[%equiplevel%]>"
+           #- if <def[mobtype]> = SKELETON define mobequip <def[mobequip].list.set[{id:261}].at[0]>
+           - EXECUTE AS_SERVER "
+             summon <def[mobtype]> <context.location.x> <context.location.y> <context.location.z> 
+             {Equipment:[%mobequip%],
+             CustomName:%mobname%,
+             CustomNameVisible:1,
+             Attributes:[
+              {Name:generic.movementSpeed,Base:0.3},
+              {Name:generic.knockbackResistance,Base:1},
+              {Name:generic.maxHealth,Base:%mobhealth%},
+              {Name:generic.attackDamage,Base:%mobdmg%}
+              ]
+             }"
+           - announce to_console '%mobname% dmg:%mobdmg%'
+         }
+cycube_spawnmoby_2:
+    type: task
+    debug: false
+    script:
+         - if <context.entity.name> = <def[mobtype]> {
+           - ^remove <context.entity>
+           - define mobhealth <m:10+<def[sd].as_int>>
+           - define mobdmg <m:2+(<def[sd].as_int>*0.2)>
+           - define mobname "(lvl <def[mobhealth].as_int>) <def[mobname]>"
+           - define mobequip "{id:0}"
+           - EXECUTE AS_SERVER "
+             summon <def[mobtype]> <context.location.x> <context.location.y> <context.location.z> 
+             {Equipment:[%mobequip%],
+             CustomName:%mobname%,
+             CustomNameVisible:1,
+             Attributes:[
+              {Name:generic.movementSpeed,Base:0.3},
+              {Name:generic.knockbackResistance,Base:1},
+              {Name:generic.maxHealth,Base:%mobhealth%},
+              {Name:generic.attackDamage,Base:%mobdmg%}
+              ]
+             }"
+           - announce to_console '%mobname% dmg:%mobdmg%'
+         }
